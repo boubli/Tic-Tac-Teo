@@ -1,183 +1,92 @@
 from tkinter import *
-from tkinter import  ttk
-from tkinter import  messagebox
+from tkinter import ttk, messagebox
 import webbrowser
 import os
+import sys
 
+# Global variables
+active_player = 1
+player_moves = {1: [], 2: []}
+winning_combinations = [
+    {1, 2, 3}, {4, 5, 6}, {7, 8, 9},  # Rows
+    {1, 4, 7}, {2, 5, 8}, {3, 6, 9},  # Columns
+    {1, 5, 9}, {3, 5, 7}              # Diagonals
+]
 
-ActivePlayer=1 #set Active player
-p1=[] #what palyer 1 select
-p2=[] #what player 2 select
+# Initialize root window
+root = Tk()
+root.title("Tic Tac Toe")
+root.configure(background="#0f5ddb")
 
-root=Tk()
-root.title("Tic Tac Teo")
 style = ttk.Style()
 style.theme_use('classic')
+style.configure('TButton', background="#0f5ddb", font=("Arial", 14))
 
-root.configure(background="#0f5ddb")
-style.configure('TButton', background="#0f5ddb")
+# Button storage
+buttons = {}
 
+# Functions
+def reset_game():
+    """Reset the game to its initial state."""
+    global active_player, player_moves
+    active_player = 1
+    player_moves = {1: [], 2: []}
+    for button in buttons.values():
+        button.config(text=" ", state=NORMAL)
+    root.title("Tic Tac Toe: Player 1's Turn")
 
-bu1=ttk.Button(root, text=' ')
-bu1.grid(row=0, column=0, ipadx=40, sticky='snew', ipady=40)
-bu1.config(command=lambda : BuClick(1))
+def exit_game():
+    """Exit the game."""
+    if messagebox.askyesno("Exit", "Are you sure you want to exit?"):
+        root.destroy()
 
-bu2=ttk.Button(root, text=' ')
-bu2.grid(row=0, column=1, ipadx=40, sticky='snew', ipady=40)
-bu2.config(command=lambda : BuClick(2))
-
-bu3=ttk.Button(root, text=' ')
-bu3.grid(row=0, column=2, ipadx=40, sticky='snew', ipady=40)
-bu3.config(command=lambda : BuClick(3))
-
-bu4=ttk.Button(root, text=' ')
-bu4.grid(row=1, column=0, ipadx=40, sticky='snew', ipady=40)
-bu4.config(command=lambda : BuClick(4))
-
-bu5=ttk.Button(root, text=' ')
-bu5.grid(row=1, column=1, ipadx=40, sticky='snew', ipady=40)
-bu5.config(command=lambda : BuClick(5))
-
-bu6=ttk.Button(root, text=' ')
-bu6.grid(row=1, column=2, ipadx=40, sticky='snew', ipady=40)
-bu6.config(command=lambda : BuClick(6))
-
-bu7=ttk.Button(root, text=' ')
-bu7.grid(row=2, column=0, ipadx=40, sticky='snew', ipady=40)
-bu7.config(command=lambda : BuClick(7))
-
-bu8=ttk.Button(root, text=' ')
-bu8.grid(row=2, column=1, ipadx=40, sticky='snew', ipady=40)
-bu8.config(command=lambda : BuClick(8))
-
-bu9=ttk.Button(root, text=' ')
-bu9.grid(row=2, column=2, ipadx=40, sticky='snew', ipady=40)
-bu9.config(command=lambda : BuClick(9))
-
-bu10=ttk.Button(root, text='Restart')
-bu10.grid(row=3, column=0,pady=10,)
-bu10.config(command=lambda : restart())
-
-
-bu11=ttk.Button(root, text='Exite')
-bu11.grid(row=3, column=1,pady=10)
-bu11.config(command=lambda : exite())
-
-bu11=ttk.Button(root, text='About Me')
-bu11.grid(row=3, column=2,pady=10)
-bu11.config(command=lambda : about())
-
-
-def exite():
-    messagebox.askyesno(title='Warning', message='Are you sure about this option')
-    exit()
-
-def restart():
-    messagebox.askyesno(title='Warning', message='Are you sure about this option')
-    os.execv(sys.executable, ['python'] + sys.argv)
-
-def about():
-    url = 'https://www.facebook.com/boubli.programmer'
+def open_about():
+    """Open the about link."""
+    url = "https://www.facebook.com/boubli.programmer"
     webbrowser.open_new_tab(url)
 
+def button_click(button_id):
+    """Handle button clicks."""
+    global active_player
+    current_player_moves = player_moves[active_player]
+    current_player_moves.append(button_id)
+    set_button_layout(button_id, "X" if active_player == 1 else "O")
+    if check_winner():
+        messagebox.showinfo("Congratulations", f"Player {active_player} wins!")
+        reset_game()
+    elif len(player_moves[1]) + len(player_moves[2]) == 9:
+        messagebox.showinfo("Draw", "It's a tie!")
+        reset_game()
+    else:
+        active_player = 2 if active_player == 1 else 1
+        root.title(f"Tic Tac Toe: Player {active_player}'s Turn")
 
+def set_button_layout(button_id, text):
+    """Update button layout for a move."""
+    button = buttons[button_id]
+    button.config(text=text, state=DISABLED)
 
+def check_winner():
+    """Check if the current player has won."""
+    current_moves = set(player_moves[active_player])
+    return any(combo.issubset(current_moves) for combo in winning_combinations)
 
-def BuClick(id):
-    global ActivePlayer
-    global p1
-    global p2
-    if (ActivePlayer==1):
-        SetLayout(id, 'X')
-        p1.append(id)
-        root.title('Tic Tac Teo : 2 player')
-        ActivePlayer=2
-        print('P1:{}'.format(p1))
-    elif (ActivePlayer==2):
-        SetLayout(id, 'O')
-        p2.append(id)
-        root.title("Tic Tac Teo : 1 player")
-        ActivePlayer=1
-        print('P2:{}'.format(p2))
-    CheWiner()
+# Create buttons
+for row in range(3):
+    for col in range(3):
+        button_id = row * 3 + col + 1
+        button = ttk.Button(root, text=" ", command=lambda id=button_id: button_click(id))
+        button.grid(row=row, column=col, ipadx=40, ipady=40, sticky="nsew")
+        buttons[button_id] = button
 
-def SetLayout(id, text):
-    if (id==1):
-        bu1.config(text=text)
-        bu1.state(['disabled'])
+# Control buttons
+ttk.Button(root, text="Restart", command=reset_game).grid(row=3, column=0, pady=10, sticky="nsew")
+ttk.Button(root, text="Exit", command=exit_game).grid(row=3, column=1, pady=10, sticky="nsew")
+ttk.Button(root, text="About Me", command=open_about).grid(row=3, column=2, pady=10, sticky="nsew")
 
-    elif (id == 2):
-        bu2.config(text=text)
-        bu2.state(['disabled'])
-
-    elif (id == 3):
-        bu3.config(text=text)
-        bu3.state(['disabled'])
-    elif (id == 4):
-        bu4.config(text=text)
-        bu4.state(['disabled'])
-    elif (id == 5):
-        bu5.config(text=text)
-        bu5.state(['disabled'])
-    elif (id == 6):
-        bu6.config(text=text)
-        bu6.state(['disabled'])
-    elif (id == 7):
-        bu7.config(text=text)
-        bu7.state(['disabled'])
-    elif (id == 8):
-        bu8.config(text=text)
-        bu8.state(['disabled'])
-    elif (id == 9):
-        bu9.config(text=text)
-        bu9.state(['disabled'])
-
-def CheWiner():
-    Winer=-1
-    if ((1 in p1) and (2 in p1) and (3 in p1)):
-        Winer=1
-    if ((1 in p2) and (2 in p2) and (3 in p2)):
-        Winer=2
-
-    if ((4 in p1) and (5 in p1) and (6 in p1)):
-        Winer = 1
-    if ((4 in p2) and (5 in p2) and (6 in p2)):
-        Winer = 2
-
-    if ((7 in p1) and (8 in p1) and (9 in p1)):
-        Winer = 1
-    if ((7 in p2) and (8 in p2) and (9 in p2)):
-        Winer = 2
-
-    if ((1 in p1) and (4 in p1) and (7 in p1)):
-        Winer = 1
-    if ((1 in p2) and (4 in p2) and (7 in p2)):
-        Winer = 2
-
-    if ((2 in p1) and (5 in p1) and (8 in p1)):
-        Winer = 1
-    if ((2 in p2) and (5 in p2) and (8 in p2)):
-        Winer = 2
-
-    if ((3 in p1) and (6 in p1) and (9 in p1)):
-        Winer = 1
-    if ((3 in p2) and (6 in p2) and (9 in p2)):
-        Winer = 2
-
-    if ((1 in p1) and (5 in p1) and (9 in p1)):
-        Winer = 1
-    if ((1 in p2) and (5 in p2) and (9 in p2)):
-        Winer = 2
-
-    if ((1 in p1) and (5 in p1) and (7 in p1)):
-        Winer = 1
-    if ((1 in p2) and (5 in p2) and (7 in p2)):
-        Winer = 2
-
-
-    if Winer==1:
-        messagebox.showinfo(title='Cong.', message='Player 1 is Winer')
-    if Winer==2:
-        messagebox.showinfo(title='Cong.', message='Player 2 is Winer')
+# Adjust column and row weights for responsiveness
+for i in range(3):
+    root.columnconfigure(i, weight=1)
+    root.rowconfigure(i, weight=1)
 
 root.mainloop()
